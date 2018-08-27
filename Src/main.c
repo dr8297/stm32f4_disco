@@ -219,7 +219,6 @@ state_line_t menu_line=line1_print;
 
 		}
 
-
   /* USER CODE END 3 */
 
 }
