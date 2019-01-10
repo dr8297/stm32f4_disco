@@ -30,8 +30,6 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.o: \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
- C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
- C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h
@@ -95,10 +93,6 @@ C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL
 C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 
 C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h:
-
-C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
-
-C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 
 C:/Users/David/Documents/STM32/STM32F4_Disco/disco_project/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h:
 

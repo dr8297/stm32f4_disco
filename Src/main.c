@@ -62,8 +62,6 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
-TIM_HandleTypeDef htim2;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -72,24 +70,20 @@ TIM_HandleTypeDef htim2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_TIM2_Init(void);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                                
+static void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+//int8_t* spt_lis4dh_read (SPI_HandleTypeDef *,  int8_t *, int8_t *)
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
 typedef enum {menu,wait_hal,change_LED} state_mach_t;
 typedef enum {line1_print,line2_print} state_line_t;
-uint8_t data[]="aaaaaaaaaaaaaaa \r\n";
+
 
 
 //PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -107,6 +101,7 @@ uint8_t line1[]="1:Line 1 of the menu \r\n";
 uint8_t line2[]="2: Toggle LEDs. Push LED number[1-3]\r\n";
 uint8_t line3[]="key 1 has been pressed \r\n";
 uint8_t line4[]="key 2 has been pressed \r\n";
+uint8_t data[]="aaaaaaaaaaaaaaa \r\n";
 /* USER CODE END 0 */
 
 int main(void)
@@ -115,6 +110,10 @@ int main(void)
   /* USER CODE BEGIN 1 */
 uint8_t usb_state=USBD_OK;
 state_line_t menu_line=line1_print;
+uint8_t data_spi[2]={0x04,0x03};
+uint8_t address_spi[2]={0x8F,0x8F};
+
+char str[1000];
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -135,17 +134,16 @@ state_line_t menu_line=line1_print;
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
   MX_I2S2_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
-  MX_TIM2_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
   //HAL_TIM_Base_Start(&htim3);
   HAL_Delay(100);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
+//  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin,GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
@@ -162,7 +160,7 @@ state_line_t menu_line=line1_print;
 		if (state_var==menu){
 			switch(menu_line){
 				case line1_print:
-					usb_state=CDC_Transmit_FS(line1,strlen(line1));
+					usb_state=CDC_Transmit_FS(line1, (uint8_t *) strlen(line1));
 					if (usb_state==USBD_OK) {
 					menu_line=line2_print;
 					break;
@@ -213,13 +211,31 @@ state_line_t menu_line=line1_print;
 					 //HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
 					break;
 			case '5':
-				state_var == wait_hal;111
+				state_var == wait_hal;
 				for(int i=0; i<256; i++){
-				 setPWM(htim2, TIM_CHANNEL_1, 255, i);
+				 //setPWM(htim2, TIM_CHANNEL_1, 255, i);
 				 HAL_Delay(10);
+
 				}
 				break;
+			case '6':
 
+				//address_spi=0x0F;
+				//data_spi = 0x0;
+
+
+				spi_lis4dh_read (&hspi1, address_spi, data_spi);
+				sprintf(str,"The value is data0: %d and data1: %d\r\n",data_spi[0],data_spi[1]);
+				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				if (usb_state==USBD_OK) {
+				state_var = wait_hal;
+				data[0]=0;
+				break;
+				} else {
+					state_var = menu; // I am not sure about this
+					data[0]=0;
+					break;
+				}
 			default:
 				state_var = wait_hal;
 				break;
@@ -384,55 +400,6 @@ static void MX_SPI1_Init(void)
 
 }
 
-/* TIM2 init function */
-static void MX_TIM2_Init(void)
-{
-
-  TIM_ClockConfigTypeDef sClockSourceConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_OC_InitTypeDef sConfigOC;
-
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 30000;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 500;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 400;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  HAL_TIM_MspPostInit(&htim2);
-
-}
-
 /** Configure pins as 
         * Analog 
         * Input 
@@ -523,8 +490,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period,
-uint16_t pulse)
+/*void setPWM(TIM_HandleTypeDef timer, uint32_t channel, uint16_t period, uint16_t pulse)
 {
  HAL_TIM_PWM_Stop(&timer, channel); // stop generation of pwm
  TIM_OC_InitTypeDef sConfigOC;
@@ -536,8 +502,18 @@ uint16_t pulse)
  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
  HAL_TIM_PWM_ConfigChannel(&timer, &sConfigOC, channel);
  HAL_TIM_PWM_Start(&timer, channel); // start pwm generation
-}
+} */
 
+spi_lis4dh_read (SPI_HandleTypeDef* hspi1, uint8_t* address_spi, uint8_t* data_spi) {
+	uint16_t size=2;
+	uint32_t timeout=100;
+	HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port,CS_I2C_SPI_Pin,GPIO_PIN_RESET);
+	HAL_Delay(5);
+	HAL_SPI_TransmitReceive(hspi1,address_spi,data_spi,size,timeout);
+	while (hspi1->State != HAL_SPI_STATE_READY);
+	HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port,CS_I2C_SPI_Pin,GPIO_PIN_SET);
+
+}
 /* USER CODE END 4 */
 
 /**
