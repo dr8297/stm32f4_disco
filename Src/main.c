@@ -102,6 +102,8 @@ uint8_t line2[]="2: Toggle LEDs. Push LED number[1-3]\r\n";
 uint8_t line3[]="key 1 has been pressed \r\n";
 uint8_t line4[]="key 2 has been pressed \r\n";
 uint8_t data[]="aaaaaaaaaaaaaaa \r\n";
+uint8_t CTRL1 =0x20;
+int size=2;
 /* USER CODE END 0 */
 
 int main(void)
@@ -111,7 +113,7 @@ int main(void)
 uint8_t usb_state=USBD_OK;
 state_line_t menu_line=line1_print;
 uint8_t data_spi[2]={0x04,0x03};
-uint8_t address_spi[2]={0x8F,0x8F};
+uint8_t address_spi[3]={0x8F,0x8F,0xa};
 
 char str[1000];
   /* USER CODE END 1 */
@@ -211,7 +213,7 @@ char str[1000];
 					 //HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
 					break;
 			case '5':
-				state_var == wait_hal;
+				state_var = wait_hal;
 				for(int i=0; i<256; i++){
 				 //setPWM(htim2, TIM_CHANNEL_1, 255, i);
 				 HAL_Delay(10);
@@ -222,11 +224,65 @@ char str[1000];
 
 				//address_spi=0x0F;
 				//data_spi = 0x0;
-
-
-				spi_lis4dh_read (&hspi1, address_spi, data_spi);
+				address_spi[0]=0x8F;
+				address_spi[1]=0x8F;
+				spi_lis4dh_read (&hspi1, address_spi, data_spi,size);
 				sprintf(str,"The value is data0: %d and data1: %d\r\n",data_spi[0],data_spi[1]);
 				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				if (usb_state==USBD_OK) {
+				state_var = wait_hal;
+				data[0]=0;
+				break;
+				} else {
+					state_var = menu; // I am not sure about this
+					data[0]=0;
+					break;
+				}
+
+			case '7':
+
+				//The read and write protocol is being used
+				// Adress _spi is the array with the address and the the data. The data is written by the uC in the data_spi array
+				address_spi[0]=0x20;
+				address_spi[1]=0x08; //PD=1,
+				data_spi[0]=0x0;
+				data_spi[1]=0x0;
+				size=3;
+				sprintf(str,"Changing CTRL1 register \r\n");
+				 usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				while (usb_state!=USBD_OK);
+				spi_lis4dh_read (&hspi1, address_spi, data_spi,size);
+				sprintf(str,"The value is data0: %d and data1: %d\r\n",data_spi[1],data_spi[2]);
+				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				if (usb_state==USBD_OK) {
+				state_var = wait_hal;
+				data[0]=0;
+				break;
+				} else {
+					state_var = menu; // I am not sure about this
+					data[0]=0;
+					break;
+				}
+
+			case '8':
+
+				//The read and write protocol is being used
+				// Adress _spi is the array with the address and the the data. The data is written by the uC in the data_spi array
+				address_spi[0]=0x3c;
+				address_spi[1]=0x3d; //PD=1,
+				data_spi[0]=0x1;
+				data_spi[1]=0x1;
+				data_spi[2]=0x1;
+				sprintf(str,"Reading data\r\n");
+				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				while (usb_state!=USBD_OK);
+				//usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+				while (data[0]!='9'){
+					spi_lis4dh_read (&hspi1, address_spi, data_spi,size);
+					sprintf(str,"The value is data0: %d data1: %d data2:%d \r\n",data_spi[0],data_spi[1],data_spi[2]);
+					usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+					while (usb_state!=USBD_OK);
+				}
 				if (usb_state==USBD_OK) {
 				state_var = wait_hal;
 				data[0]=0;
@@ -504,12 +560,12 @@ static void MX_GPIO_Init(void)
  HAL_TIM_PWM_Start(&timer, channel); // start pwm generation
 } */
 
-spi_lis4dh_read (SPI_HandleTypeDef* hspi1, uint8_t* address_spi, uint8_t* data_spi) {
-	uint16_t size=2;
+void spi_lis4dh_read (SPI_HandleTypeDef* hspi1, uint8_t* address_spi, uint8_t* data_spi, int size) {
+	//uint16_t size=2;
 	uint32_t timeout=100;
 	HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port,CS_I2C_SPI_Pin,GPIO_PIN_RESET);
 	HAL_Delay(5);
-	HAL_SPI_TransmitReceive(hspi1,address_spi,data_spi,size,timeout);
+	HAL_SPI_TransmitReceive(hspi1,address_spi,data_spi,(uint16_t) size,timeout);
 	while (hspi1->State != HAL_SPI_STATE_READY);
 	HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port,CS_I2C_SPI_Pin,GPIO_PIN_SET);
 
