@@ -51,7 +51,11 @@
 #include "stm32f4xx_hal.h"
 #include "usb_device.h"
 
+
 /* USER CODE BEGIN Includes */
+// Function prototype
+void spi_lis4dh_read (SPI_HandleTypeDef*, uint8_t*, uint8_t*, int);
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -104,6 +108,8 @@ uint8_t line4[]="key 2 has been pressed \r\n";
 uint8_t data[]="aaaaaaaaaaaaaaa \r\n";
 uint8_t CTRL1 =0x20;
 int size=2;
+
+int16_t  datax=0;
 /* USER CODE END 0 */
 
 int main(void)
@@ -226,6 +232,7 @@ char str[1000];
 				//data_spi = 0x0;
 				address_spi[0]=0x8F;
 				address_spi[1]=0x8F;
+				size=2;
 				spi_lis4dh_read (&hspi1, address_spi, data_spi,size);
 				sprintf(str,"The value is data0: %d and data1: %d\r\n",data_spi[0],data_spi[1]);
 				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
@@ -244,10 +251,10 @@ char str[1000];
 				//The read and write protocol is being used
 				// Adress _spi is the array with the address and the the data. The data is written by the uC in the data_spi array
 				address_spi[0]=0x20;
-				address_spi[1]=0x08; //PD=1,
+				address_spi[1]=0x0F; //PD=1 and enable the axis,
 				data_spi[0]=0x0;
 				data_spi[1]=0x0;
-				size=3;
+				size=2;
 				sprintf(str,"Changing CTRL1 register \r\n");
 				 usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
 				while (usb_state!=USBD_OK);
@@ -268,35 +275,51 @@ char str[1000];
 
 				//The read and write protocol is being used
 				// Adress _spi is the array with the address and the the data. The data is written by the uC in the data_spi array
-				address_spi[0]=0x3c;
-				address_spi[1]=0x3d; //PD=1,
+				address_spi[0]=(0x28 | 0xC0); //OUT_X_L (28h)
+				address_spi[1]=(0x29 | 0x80); //PD=1, //OUT_X_H (29h)
 				data_spi[0]=0x1;
 				data_spi[1]=0x1;
 				data_spi[2]=0x1;
+				size=3;
 				sprintf(str,"Reading data\r\n");
 				usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
 				while (usb_state!=USBD_OK);
 				//usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
 				while (data[0]!='9'){
+					datax=0;
 					spi_lis4dh_read (&hspi1, address_spi, data_spi,size);
-					sprintf(str,"The value is data0: %d data1: %d data2:%d \r\n",data_spi[0],data_spi[1],data_spi[2]);
-					usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
-					while (usb_state!=USBD_OK);
-				}
-				if (usb_state==USBD_OK) {
+					//pointer arithmrtic
+					datax= (((int16_t)data_spi[2])<<8)+(int16_t)data_spi[1];
+					if (datax <=-5000) {
+						HAL_GPIO_WritePin(GPIOD, LD5_Pin,GPIO_PIN_SET);
+						HAL_GPIO_WritePin(GPIOD, LD4_Pin,GPIO_PIN_RESET);
+					} else if (datax >=5000) {
+						HAL_GPIO_WritePin(GPIOD, LD4_Pin,GPIO_PIN_SET);
+						HAL_GPIO_WritePin(GPIOD, LD5_Pin,GPIO_PIN_RESET);
+					} else {
+						HAL_GPIO_WritePin(GPIOD, LD4_Pin,GPIO_PIN_RESET);
+						HAL_GPIO_WritePin(GPIOD, LD5_Pin,GPIO_PIN_RESET);
+						}
+					}
+					//sprintf(str,"The value is data0: %d data1: %d data2: %d \r\n",data_spi[0],data_spi[1],data_spi[2]);
+					//sprintf(str,"The value is data: %i \r\n",datax);
+					//usb_state=CDC_Transmit_FS(str, (uint8_t *) strlen(str));
+					//while (usb_state!=USBD_OK);
+				//}
+				//if (usb_state==USBD_OK) {
 				state_var = wait_hal;
 				data[0]=0;
 				break;
-				} else {
+				/*} else {
 					state_var = menu; // I am not sure about this
 					data[0]=0;
 					break;
-				}
+				} */
 			default:
 				state_var = wait_hal;
 				break;
 			}
-		}
+	}
 			else {
 				HAL_Delay(200);
 			}
